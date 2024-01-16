@@ -10,6 +10,15 @@ export const chartOptions = {
     zoom: {
       enabled: false,
     },
+    events: {
+      click(event, chartContext, config) {
+        console.log(config.config.series[config.seriesIndex]);
+        console.log(config.config.series[config.seriesIndex].name);
+        console.log(
+          config.config.series[config.seriesIndex].data[config.dataPointIndex]
+        );
+      },
+    },
   },
   dataLabels: {
     enabled: true,
@@ -44,6 +53,15 @@ export const chartOptions = {
     },
   },
   tooltip: {
-    enabled: false,
+    enabled: true,
+    intersect: true,
+    shared: false,
+  },
+  markers: {
+    size: 1,
+  },
+  selection: {
+    enabled: true,
+    type: "x",
   },
 };
