@@ -1,60 +1,72 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-
-interface IOverviewParams {
-  marketplace: string;
-  sellerId: string;
-  requestStatus: number;
-  day: number;
-  excludeYoYData: boolean;
-}
-
-interface ISkuParams {
-  isDaysCompare: number;
-  marketplace: string;
-  pageNumber: number;
-  pageSize: number;
-  salesDate: string;
-  salesDate2: string;
-  sellerId: string;
-}
+import { IOverviewParams, ISkuParams, ISkuList, IItemDate } from "../types";
 
 export const useResultStore = defineStore("ResultStore", {
   state: () => {
     return {
       currency: "",
       isYoyExist: true,
-      item: [],
-      itemDates: [],
-      skuList: [],
+      salesItems: [],
+      salesItemDates: [] as Array<IItemDate>,
+      skuList: [] as Array<ISkuList>,
     };
   },
   getters: {
-    getItems(state) {
-      return state.item;
+    getSalesItems(state) {
+      return state.salesItems;
     },
-    getItemDates(state) {
-      return state.itemDates;
+    getSalesItemDates(state) {
+      return state.salesItemDates;
     },
-    getSelectedItemDatesCount(state) {
-      return state.itemDates.filter((item) => item.selected === true).length;
+    getSelectedSalesItemDatesCount(state) {
+      return state.salesItemDates.filter((item) => item.selected === true)
+        .length;
     },
-    getSelectedItemDates(state) {
-      return state.itemDates.filter((item) => item.selected === true);
+    getSelectedSalesItemDates(state) {
+      return state.salesItemDates.filter((item) => item.selected === true);
     },
-    getItemDatesByIndex(state) {
-      return (index: number) => state.itemDates[index];
+    getSalesItemDatesByIndex(state) {
+      return (index: number) => state.salesItemDates[index];
     },
-    getSkuList(state): Array<object> {
-      return this.skuList;
+    getSkuList(state) {
+      return state.skuList;
     },
   },
   actions: {
     resetSelectedItemDates() {
-      this.itemDates.map((item) => (item.selected = false));
+      this.salesItemDates.map((item) => (item.selected = false));
     },
     setSelectedItemDate(index: number) {
-      this.itemDates[index].selected = true;
+      this.salesItemDates[index].selected = true;
+    },
+    setSalesItems(data) {
+      this.currency = data.Currency;
+      this.isYoyExist = data.isYoyExist;
+      this.salesItems = data.item;
+      data.item.map((d: IItemDate) => {
+        this.salesItemDates.push({
+          date: d.date,
+          selected: false,
+        } as IItemDate);
+      });
+    },
+    setSkuListItems(data) {
+      const skuListData = data.skuList;
+
+      this.skuList = skuListData.map((item: ISkuList) => {
+        return {
+          sku: item.sku,
+          productName: item.productName,
+          skuRefundRate: "",
+          amount: item.amount,
+          amount2: item.amount2,
+          qty: item.qty,
+          qty2: item.qty2,
+          selectedDate: data.selectedDate,
+          selectedDate2: data.selectedDate2 || null,
+        };
+      });
     },
     async fetchDailySalesOverview(params: IOverviewParams) {
       try {
@@ -71,15 +83,7 @@ export const useResultStore = defineStore("ResultStore", {
         );
         const data = response.data.Data;
 
-        this.currency = data.Currency;
-        this.isYoyExist = data.isYoyExist;
-        this.item = data.item;
-        data.item.map((d: object) => {
-          this.itemDates.push({
-            date: d.date,
-            selected: false,
-          });
-        });
+        this.setSalesItems(data);
       } catch (error) {
         console.error("Error:", error);
         throw error;
@@ -99,21 +103,8 @@ export const useResultStore = defineStore("ResultStore", {
           config
         );
         const data = response.data.Data.item;
-        const skuListData = data.skuList;
 
-        this.skuList = skuListData.map((item) => {
-          return {
-            sku: item.sku,
-            productName: item.productName,
-            skuRefundRate: "",
-            amount: item.amount,
-            amount2: item.amount2,
-            qty: item.qty,
-            qty2: item.qty2,
-            selectedDate: data.selectedDate,
-            selectedDate2: data.selectedDate2 || null,
-          };
-        });
+        this.setSkuListItems(data);
       } catch (error) {
         console.error("Error:", error);
         throw error;

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, defineProps } from "vue";
+import { defineProps } from "vue";
 
-const props = defineProps(["columns", "data"]);
+defineProps(["columns", "data"]);
 </script>
 
 <template>
-  <div>
-    <table>
+  <div class="table-container">
+    <table class="table">
       <thead>
         <tr>
           <th
@@ -29,22 +29,6 @@ const props = defineProps(["columns", "data"]);
   </div>
 </template>
 
-<style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-th,
-td {
-  border: none;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-  font-size: 12px;
-}
+<style lang="scss" scoped>
+@import "../styles/table.scss";
 </style>

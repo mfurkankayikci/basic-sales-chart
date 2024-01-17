@@ -1,0 +1,22 @@
+.table-container {
+  padding: 16px 32px;
+  margin: 32px 0;
+  background-color: #fff;
+
+  .table {
+    font-size: 10px;
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      border: none;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      border-bottom: 1px solid #efefef;
+    }
+  }
+}

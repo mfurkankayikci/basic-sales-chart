@@ -1,0 +1,29 @@
+.chart {
+  background-color: #fff;
+  padding: 32px 32px;
+  margin: 32px 0;
+
+  &-header {
+    @apply flex justify-between items-center mb-8;
+
+    .heading {
+      font-weight: 600;
+      font-size: 20px;
+      line-height: 24px;
+    }
+
+    select {
+      border: 1px solid #efefef;
+      border-radius: 4px;
+      padding: 8px 16px;
+    }
+  }
+
+  &-content {
+    @apply flex items-center;
+
+    .vue-apexcharts {
+      width: 800px;
+    }
+  }
+}

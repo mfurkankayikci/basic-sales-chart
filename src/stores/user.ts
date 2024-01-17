@@ -1,10 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-
-interface ILogin {
-  email: string;
-  password: string;
-}
+import { ILogin } from "../types";
 
 export const useUserStore = defineStore("UserStore", {
   state: () => {
@@ -63,8 +59,12 @@ export const useUserStore = defineStore("UserStore", {
           { email: email || "" },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        const data = userInformationResponse.data.Data;
-        this.user = data;
+        const data = userInformationResponse.data.Data.user.store[0];
+        const userData = {
+          marketplace: data.marketplaceName,
+          sellerId: data.storeId,
+        };
+        this.user = userData;
       } catch (error) {
         console.error("Error:", error);
       }

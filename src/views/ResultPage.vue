@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
+import Section from "../components/Section.vue";
 import Table from "../components/Table.vue";
 import { useUserStore } from "../stores/user";
 import { useResultStore } from "../stores/result";
 import { chartOptions } from "../data/chartOptions.ts";
+import {
+  ITableHeaderItem,
+  ISkuParams,
+  ISalesItem,
+  IUserInformation,
+} from "../types";
 import { log } from "console";
 
 const userStore = useUserStore();
 const resultStore = useResultStore();
-
-const userInformation = userStore.getUser;
-const marketplace = userInformation.user.store[0].marketplaceName;
-const sellerId = userInformation.user.store[0].storeId;
-
+const userInformation = userStore.getUser as IUserInformation;
+const marketplace = userInformation.marketplace;
+const sellerId = userInformation.sellerId;
 const isChartDataFetched = ref(false);
-const filterDayRef = ref("6");
-
+const filterDayRef = ref("7");
+const tableColumns = ref();
+const tableData = ref();
 const barChartOptions = ref(chartOptions);
 const width = ref(document.querySelector(".vue-apexcharts")?.clientWidth);
 const barChartSeries = ref([
@@ -23,17 +29,14 @@ const barChartSeries = ref([
   { name: "FBA Sales", data: [] },
   { name: "FBM Sales", data: [] },
 ]);
-
-const tableColumns = ref([]);
-const tableData = ref([]);
-
-const setChartValues = (data) => {
-  barChartOptions.value.xaxis.categories = data.map((item) => item.date);
-  barChartSeries.value[0].data = data.map((item) => item.profit);
-  barChartSeries.value[1].data = data.map((item) => item.fbaAmount);
-  barChartSeries.value[2].data = data.map((item) => item.fbmAmount);
+const setChartValues = (data: any) => {
+  barChartOptions.value.xaxis.categories = data.map(
+    (item: ISalesItem) => item.date
+  );
+  barChartSeries.value[0].data = data.map((item: ISalesItem) => item.profit);
+  barChartSeries.value[1].data = data.map((item: ISalesItem) => item.fbaAmount);
+  barChartSeries.value[2].data = data.map((item: ISalesItem) => item.fbmAmount);
 };
-
 const initChart = async () => {
   try {
     await resultStore.fetchDailySalesOverview({
@@ -44,19 +47,17 @@ const initChart = async () => {
       excludeYoYData: false,
     });
 
-    setChartValues(resultStore.getItems);
+    setChartValues(resultStore.getSalesItems);
     isChartDataFetched.value = true;
   } catch (error) {
     console.error("Error:", error);
   }
 };
-
-const fetchSkuList = async (payload) => {
+const fetchSkuList = async (payload: ISkuParams) => {
   try {
     await resultStore.fetchDailySalesSkuList(payload);
 
     const skuList = resultStore.getSkuList;
-    console.log(skuList);
 
     const tableHeaderData = [
       { key: "sku", label: "SKU" },
@@ -73,9 +74,9 @@ const fetchSkuList = async (payload) => {
         key: "skuRefundRate",
         label: `SKU Refund Rate <br /><sup>(Last ${filterDayRef.value} days)</sup>`,
       },
-    ];
+    ] as Array<ITableHeaderItem>;
 
-    const tableBodyData = skuList.map((item) => {
+    const tableBodyData = skuList.map((item: any) => {
       return {
         sku: item.sku,
         productName: item.productName,
@@ -96,13 +97,6 @@ const fetchSkuList = async (payload) => {
     console.error("Error:", error);
   }
 };
-
-watch(filterDayRef, () => {
-  initChart();
-});
-
-onMounted(async () => initChart());
-
 const handleBarClick = (
   event: MouseEvent,
   chartContext: any,
@@ -111,58 +105,65 @@ const handleBarClick = (
   const dataPointIndex: number = config.dataPointIndex;
 
   if (dataPointIndex !== -1) {
-    if (resultStore.getSelectedItemDatesCount === 2) {
+    if (resultStore.getSelectedSalesItemDatesCount === 2) {
       resultStore.resetSelectedItemDates();
     }
 
     resultStore.setSelectedItemDate(dataPointIndex);
 
     const payload = {
-      isDaysCompare: resultStore.getSelectedItemDatesCount > 1 ? 1 : 0,
+      isDaysCompare: resultStore.getSelectedSalesItemDatesCount > 1 ? 1 : 0,
       marketplace: marketplace,
       pageNumber: 1,
       pageSize: 30,
-      salesDate: resultStore.getSelectedItemDates[0]?.date,
-      salesDate2: resultStore.getSelectedItemDates[1]?.date || ".",
+      salesDate: resultStore.getSelectedSalesItemDates[0]?.date,
+      salesDate2: resultStore.getSelectedSalesItemDates[1]?.date || ".",
       sellerId: sellerId,
-    };
+    } as ISkuParams;
 
     fetchSkuList(payload);
   }
 };
+
+watch(filterDayRef, () => {
+  initChart();
+});
+
+onMounted(async () => initChart());
 </script>
 
 <template>
-  <div class="chart">
-    <div class="chart-header">
-      <h4 class="heading">Daily Sales</h4>
+  <Section class="section-chart">
+    <div class="chart">
+      <div class="chart-header">
+        <h4 class="heading">Daily Sales</h4>
 
-      <select v-model="filterDayRef">
-        <option value="59">Last 60 Days</option>
-        <option value="29">Last 30 Days</option>
-        <option value="13">Last 14 Days</option>
-        <option value="6" selected>Last 7 Days</option>
-      </select>
+        <select v-model="filterDayRef">
+          <option value="60">Last 60 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="14">Last 14 Days</option>
+          <option value="7" selected>Last 7 Days</option>
+        </select>
+      </div>
+      <div class="chart-content">
+        <apexchart
+          v-if="isChartDataFetched"
+          type="bar"
+          :options="barChartOptions"
+          :series="barChartSeries"
+          height="350"
+          :width="width"
+          @click="handleBarClick"
+        />
+      </div>
     </div>
-    <div class="chart-content">
-      <apexchart
-        v-if="isChartDataFetched"
-        type="bar"
-        :options="barChartOptions"
-        :series="barChartSeries"
-        height="350"
-        :width="width"
-        @click="handleBarClick"
-      />
-    </div>
-    <div class="chart-details">
-      <Table :columns="tableColumns" :data="tableData" />
-    </div>
-  </div>
+  </Section>
+
+  <Section class="section-table">
+    <Table :columns="tableColumns" :data="tableData" />
+  </Section>
 </template>
 
-<style>
-.vue-apexcharts {
-  width: 800px;
-}
+<style lang="scss">
+@import "../styles/chart.scss";
 </style>
