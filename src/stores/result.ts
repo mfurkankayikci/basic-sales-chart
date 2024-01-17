@@ -23,20 +23,39 @@ export const useResultStore = defineStore("ResultStore", {
   state: () => {
     return {
       currency: "",
-      item: [],
       isYoyExist: true,
+      item: [],
+      itemDates: [],
       skuList: [],
     };
   },
   getters: {
-    getItemByIndex(state) {
-      return (index: number) => state.item[index];
+    getItems(state) {
+      return state.item;
+    },
+    getItemDates(state) {
+      return state.itemDates;
+    },
+    getSelectedItemDatesCount(state) {
+      return state.itemDates.filter((item) => item.selected === true).length;
+    },
+    getSelectedItemDates(state) {
+      return state.itemDates.filter((item) => item.selected === true);
+    },
+    getItemDatesByIndex(state) {
+      return (index: number) => state.itemDates[index];
     },
     getSkuList(state): Array<object> {
       return this.skuList;
     },
   },
   actions: {
+    resetSelectedItemDates() {
+      this.itemDates.map((item) => (item.selected = false));
+    },
+    setSelectedItemDate(index: number) {
+      this.itemDates[index].selected = true;
+    },
     async fetchDailySalesOverview(params: IOverviewParams) {
       try {
         const config = {
@@ -55,6 +74,12 @@ export const useResultStore = defineStore("ResultStore", {
         this.currency = data.Currency;
         this.isYoyExist = data.isYoyExist;
         this.item = data.item;
+        data.item.map((d: object) => {
+          this.itemDates.push({
+            date: d.date,
+            selected: false,
+          });
+        });
       } catch (error) {
         console.error("Error:", error);
         throw error;
@@ -73,16 +98,20 @@ export const useResultStore = defineStore("ResultStore", {
           params,
           config
         );
-        const data = response.data.Data.item.skuList;
-        console.log(data);
+        const data = response.data.Data.item;
+        const skuListData = data.skuList;
 
-        this.skuList = data.map((item) => {
+        this.skuList = skuListData.map((item) => {
           return {
             sku: item.sku,
             productName: item.productName,
-            detailFirst: "",
-            detailSecond: "",
             skuRefundRate: "",
+            amount: item.amount,
+            amount2: item.amount2,
+            qty: item.qty,
+            qty2: item.qty2,
+            selectedDate: data.selectedDate,
+            selectedDate2: data.selectedDate2 || null,
           };
         });
       } catch (error) {

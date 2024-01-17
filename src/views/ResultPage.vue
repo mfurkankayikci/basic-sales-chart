@@ -4,57 +4,37 @@ import Table from "../components/Table.vue";
 import { useUserStore } from "../stores/user";
 import { useResultStore } from "../stores/result";
 import { chartOptions } from "../data/chartOptions.ts";
+import { log } from "console";
 
 const userStore = useUserStore();
 const resultStore = useResultStore();
 
-const barChartOptions = ref(chartOptions);
+const userInformation = userStore.getUser;
+const marketplace = userInformation.user.store[0].marketplaceName;
+const sellerId = userInformation.user.store[0].storeId;
 
+const isChartDataFetched = ref(false);
+const filterDayRef = ref("6");
+
+const barChartOptions = ref(chartOptions);
 const width = ref(document.querySelector(".vue-apexcharts")?.clientWidth);
-const filterDayRef = ref("7");
 const barChartSeries = ref([
   { name: "Profit", data: [] },
   { name: "FBA Sales", data: [] },
   { name: "FBM Sales", data: [] },
 ]);
-let tableColumns = ref([
-  { key: "sku", label: "SKU" },
-  { key: "productName", label: "Product Name" },
-  {
-    key: "detailFirst",
-    label: `Tuesday<br />
-          11-16-2022 <br />
-          Sales/Units <br />
-          Avg. Selling Price`,
-  },
-  {
-    key: "detailSecond",
-    label: `Wednesday<br />
-          11-16-2022 <br />
-          Sales/Units <br />
-          Avg. Selling Price`,
-  },
-  {
-    key: "skuRefundRate",
-    label: ` SKU Refund Rate <br />
-          <sup>(Last 60 days)</sup>`,
-  },
-]);
 
+const tableColumns = ref([]);
 const tableData = ref([]);
 
 const setChartValues = (data) => {
-  barChartOptions.value.xaxis.categories = data.item.map((item) => item.date);
-  barChartSeries.value[0].data = data.item.map((item) => item.profit);
-  barChartSeries.value[1].data = data.item.map((item) => item.fbaAmount);
-  barChartSeries.value[2].data = data.item.map((item) => item.fbmAmount);
+  barChartOptions.value.xaxis.categories = data.map((item) => item.date);
+  barChartSeries.value[0].data = data.map((item) => item.profit);
+  barChartSeries.value[1].data = data.map((item) => item.fbaAmount);
+  barChartSeries.value[2].data = data.map((item) => item.fbmAmount);
 };
 
 const initChart = async () => {
-  const userInformation = userStore.getUser;
-  const marketplace = userInformation.user.store[0].marketplaceName;
-  const sellerId = userInformation.user.store[0].storeId;
-
   try {
     await resultStore.fetchDailySalesOverview({
       marketplace: marketplace,
@@ -64,31 +44,54 @@ const initChart = async () => {
       excludeYoYData: false,
     });
 
-    setChartValues(resultStore);
+    setChartValues(resultStore.getItems);
+    isChartDataFetched.value = true;
   } catch (error) {
     console.error("Error:", error);
   }
 };
 
-const fetchSkuList = async (date) => {
-  const userInformation = userStore.getUser;
-  const marketplace = userInformation.user.store[0].marketplaceName;
-  const sellerId = userInformation.user.store[0].storeId;
-
+const fetchSkuList = async (payload) => {
   try {
-    await resultStore.fetchDailySalesSkuList({
-      isDaysCompare: 0,
-      marketplace: marketplace,
-      pageNumber: 1,
-      pageSize: 30,
-      salesDate: date,
-      salesDate2: ".",
-      sellerId: sellerId,
+    await resultStore.fetchDailySalesSkuList(payload);
+
+    const skuList = resultStore.getSkuList;
+    console.log(skuList);
+
+    const tableHeaderData = [
+      { key: "sku", label: "SKU" },
+      { key: "productName", label: "Product Name" },
+      {
+        key: "detailFirst",
+        label: `${skuList[0].selectedDate} <br /> Sales/Units <br />Avg. Selling Price`,
+      },
+      {
+        key: "detailSecond",
+        label: `${skuList[0].selectedDate2} <br /> Sales/Units <br />Avg. Selling Price`,
+      },
+      {
+        key: "skuRefundRate",
+        label: `SKU Refund Rate <br /><sup>(Last ${filterDayRef.value} days)</sup>`,
+      },
+    ];
+
+    const tableBodyData = skuList.map((item) => {
+      return {
+        sku: item.sku,
+        productName: item.productName,
+        detailFirst: `${item.amount} / ${item.qty}<br/> ${
+          item.amount / item.qty
+        }`,
+        detailSecond: `${item.amount2} / ${item.qty2}<br/> ${
+          item.amount2 / item.qty2
+        }`,
+        skuRefundRate: "",
+      };
     });
 
-    tableData.value = resultStore.getSkuList;
+    tableColumns.value = tableHeaderData;
 
-    console.log(resultStore.getSkuList);
+    tableData.value = tableBodyData;
   } catch (error) {
     console.error("Error:", error);
   }
@@ -100,12 +103,31 @@ watch(filterDayRef, () => {
 
 onMounted(async () => initChart());
 
-const handleBarClick = (event, chartContext, config) => {
-  const dataPointIndex = config.dataPointIndex;
+const handleBarClick = (
+  event: MouseEvent,
+  chartContext: any,
+  config: any
+): void => {
+  const dataPointIndex: number = config.dataPointIndex;
 
   if (dataPointIndex !== -1) {
-    const data = resultStore.getItemByIndex(dataPointIndex);
-    fetchSkuList(data.date);
+    if (resultStore.getSelectedItemDatesCount === 2) {
+      resultStore.resetSelectedItemDates();
+    }
+
+    resultStore.setSelectedItemDate(dataPointIndex);
+
+    const payload = {
+      isDaysCompare: resultStore.getSelectedItemDatesCount > 1 ? 1 : 0,
+      marketplace: marketplace,
+      pageNumber: 1,
+      pageSize: 30,
+      salesDate: resultStore.getSelectedItemDates[0]?.date,
+      salesDate2: resultStore.getSelectedItemDates[1]?.date || ".",
+      sellerId: sellerId,
+    };
+
+    fetchSkuList(payload);
   }
 };
 </script>
@@ -116,14 +138,15 @@ const handleBarClick = (event, chartContext, config) => {
       <h4 class="heading">Daily Sales</h4>
 
       <select v-model="filterDayRef">
-        <option value="60">Last 60 Days</option>
-        <option value="30">Last 30 Days</option>
-        <option value="14">Last 14 Days</option>
-        <option value="7" selected>Last 7 Days</option>
+        <option value="59">Last 60 Days</option>
+        <option value="29">Last 30 Days</option>
+        <option value="13">Last 14 Days</option>
+        <option value="6" selected>Last 7 Days</option>
       </select>
     </div>
     <div class="chart-content">
       <apexchart
+        v-if="isChartDataFetched"
         type="bar"
         :options="barChartOptions"
         :series="barChartSeries"
