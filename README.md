@@ -1,18 +1,35 @@
-# Vue 3 + TypeScript + Vite
+# Basic Sales Chart
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## Description
 
-## Recommended IDE Setup
+The project showcases modern Vue.js development practices, leveraging the latest features and libraries to create a robust and user-friendly application for managing and analyzing daily sales data. The use of TypeScript and Pinia contributes to a scalable and maintainable codebase, making it suitable for future enhancements and feature additions.
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+## Technologies Used
 
-## Type Support For `.vue` Imports in TS
+- [Vue 3](https://v3.vuejs.org/): Used for the user interface.
+- [Pinia](https://pinia.esm.dev/): Used for state management in Vue applications. While Vuex is a great state management solution, especially for smaller applications or when using Vue 2, Pinia's TypeScript support, modular design, and performance optimizations make it an attractive choice for larger and more complex Vue 3 projects. Pinia was used instead of Vuex for the following reasons:
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
+  - TypeScript Support
+  - Modular Store Design
+  - Composable API
+  - Reactiveness and Devtools
+  - Ecosystem Integration
 
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
+- [Vue-ApexCharts](https://apexcharts.com/vue-chart-demos/): Used for creating charts.
+- [Axios](https://axios-http.com/): Used for making HTTP requests.
 
-1. Disable the built-in TypeScript Extension
-   1. Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-   2. Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
+## Project Structure
+
+The project is developed using Vue 3 and Pinia. Main components include user login, result page, and chart representation.
+
+## How to Run
+
+Navigate to the project folder and follow the steps below:
+
+1. Run `npm install` to install project dependencies.
+2. Run `npm run serve` to start the project.
+
+## Developer
+
+Furkan Kayıkcı
+mfurkankayikci@gmail.com

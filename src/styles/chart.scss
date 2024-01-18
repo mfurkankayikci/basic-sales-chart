@@ -28,3 +28,21 @@
     }
   }
 }
+
+.custom-tooltip {
+  padding: 8px;
+
+  .tooltip-item {
+    padding: 4px 0;
+    border-bottom: 1px solid #efefef;
+    font-size: 12px;
+
+    b {
+      margin-right: 8px;
+    }
+
+    &:nth-last-child(1) {
+      border-color: transparent;
+    }
+  }
+}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, onBeforeMount, watch } from "vue";
+import { useRouter } from "vue-router";
 import Section from "../components/Section.vue";
 import Table from "../components/Table.vue";
 import { useUserStore } from "../stores/user";
@@ -14,6 +15,7 @@ import {
 
 const userStore = useUserStore();
 const resultStore = useResultStore();
+const router = useRouter();
 const userInformation = userStore.getUser as IUserInformation;
 const marketplace = userInformation.marketplace;
 const sellerId = userInformation.sellerId;
@@ -21,7 +23,40 @@ const isChartDataFetched = ref(false);
 const filterDayRef = ref("7");
 const tableColumns = ref();
 const tableData = ref();
-const barChartOptions = ref(chartOptions);
+const barChartOptions = ref({
+  ...chartOptions, // Keep your existing chart options
+  tooltip: {
+    custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+      const currency = resultStore.getCurrency;
+      const totalSales = series[0][dataPointIndex] + series[1][dataPointIndex];
+      const shipping = series[2][dataPointIndex];
+      const profit = series[0][dataPointIndex];
+      const fbaSales = series[1][dataPointIndex];
+      const fbmSales = series[2][dataPointIndex];
+
+      return `
+        <div class="custom-tooltip">
+          <div class="tooltip-item"><b>Total Sales:</b>${currency}${totalSales.toFixed(
+        2
+      )}</div>
+          <div class="tooltip-item"><b>Shipping:</b>${currency}${shipping.toFixed(
+        2
+      )}</div>
+          <div class="tooltip-item"><b>Profit:</b>${currency}${profit.toFixed(
+        2
+      )}</div>
+          <div class="tooltip-item"><b>FBA Sales:</b>${currency}${fbaSales.toFixed(
+        2
+      )}</div>
+          <div class="tooltip-item"><b>FBM Sales:</b>${currency}${fbmSales.toFixed(
+        2
+      )}</div>
+
+        </div>
+      `;
+    },
+  },
+});
 const width = ref(document.querySelector(".chart")?.clientWidth);
 const showTable = ref(false);
 const barChartSeries = ref([
@@ -29,6 +64,7 @@ const barChartSeries = ref([
   { name: "FBA Sales", data: [] },
   { name: "FBM Sales", data: [] },
 ]);
+
 const setChartValues = (data: any) => {
   barChartOptions.value.xaxis.categories = data.map(
     (item: ISalesItem) => item.date
@@ -188,7 +224,17 @@ watch(filterDayRef, () => {
   initChart();
 });
 
-onMounted(async () => initChart());
+onBeforeMount(() => {
+  const hasToken = sessionStorage.getItem("token");
+
+  if (!hasToken) {
+    router.push("/");
+  }
+});
+
+onMounted(async () => {
+  initChart();
+});
 </script>
 
 <template>
