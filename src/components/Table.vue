@@ -11,8 +11,8 @@ defineProps(["columns", "data"]);
         <tr>
           <th
             v-for="column in columns"
-            :key="column.key"
             v-html="column.label"
+            :key="column.key"
           ></th>
         </tr>
       </thead>

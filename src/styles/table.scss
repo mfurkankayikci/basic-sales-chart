@@ -18,5 +18,21 @@
     th {
       border-bottom: 1px solid #efefef;
     }
+
+    td {
+      &:nth-child(3) {
+        color: lightseagreen;
+        font-weight: 600;
+      }
+
+      &:nth-child(4) {
+        color: purple;
+        font-weight: 600;
+      }
+
+      &:nth-last-child(1) {
+        color: black;
+      }
+    }
   }
 }

@@ -32,6 +32,9 @@ export const useResultStore = defineStore("ResultStore", {
     getSkuList(state) {
       return state.skuList;
     },
+    getCurrency(state) {
+      return state.currency;
+    },
   },
   actions: {
     resetSelectedItemDates() {
@@ -105,6 +108,25 @@ export const useResultStore = defineStore("ResultStore", {
         const data = response.data.Data.item;
 
         this.setSkuListItems(data);
+      } catch (error) {
+        console.error("Error:", error);
+        throw error;
+      }
+    },
+    async fetchSkuRefundRate(params: any) {
+      try {
+        const config = {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        };
+
+        const response = await axios.post(
+          "/data/get-sku-refund-rate",
+          params,
+          config
+        );
+        const data = response.data.Data;
       } catch (error) {
         console.error("Error:", error);
         throw error;

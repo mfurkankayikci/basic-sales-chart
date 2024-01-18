@@ -11,7 +11,6 @@ import {
   ISalesItem,
   IUserInformation,
 } from "../types";
-import { log } from "console";
 
 const userStore = useUserStore();
 const resultStore = useResultStore();
@@ -23,7 +22,8 @@ const filterDayRef = ref("7");
 const tableColumns = ref();
 const tableData = ref();
 const barChartOptions = ref(chartOptions);
-const width = ref(document.querySelector(".vue-apexcharts")?.clientWidth);
+const width = ref(document.querySelector(".chart")?.clientWidth);
+const showTable = ref(false);
 const barChartSeries = ref([
   { name: "Profit", data: [] },
   { name: "FBA Sales", data: [] },
@@ -56,57 +56,116 @@ const initChart = async () => {
 const fetchSkuList = async (payload: ISkuParams) => {
   try {
     await resultStore.fetchDailySalesSkuList(payload);
-
     const skuList = resultStore.getSkuList;
-
-    const tableHeaderData = [
+    const tableHeaderData: Array<ITableHeaderItem> = [
       { key: "sku", label: "SKU" },
       { key: "productName", label: "Product Name" },
       {
         key: "detailFirst",
         label: `${skuList[0].selectedDate} <br /> Sales/Units <br />Avg. Selling Price`,
       },
-      {
-        key: "detailSecond",
-        label: `${skuList[0].selectedDate2} <br /> Sales/Units <br />Avg. Selling Price`,
-      },
-      {
-        key: "skuRefundRate",
-        label: `SKU Refund Rate <br /><sup>(Last ${filterDayRef.value} days)</sup>`,
-      },
-    ] as Array<ITableHeaderItem>;
-
+    ];
     const tableBodyData = skuList.map((item: any) => {
       return {
         sku: item.sku,
         productName: item.productName,
-        detailFirst: `${item.amount} / ${item.qty}<br/> ${
-          item.amount / item.qty
-        }`,
-        detailSecond: `${item.amount2} / ${item.qty2}<br/> ${
-          item.amount2 / item.qty2
-        }`,
-        skuRefundRate: "",
+        detailFirst: `${resultStore.getCurrency}${parseFloat(
+          item.amount
+        ).toFixed(2)} / ${parseFloat(item.qty).toFixed(2)}<br/> ${
+          resultStore.getCurrency
+        }${parseFloat(item.amount / item.qty).toFixed(2)}`,
+        detailSecond: `${resultStore.getCurrency}${parseFloat(
+          item.amount2
+        ).toFixed(2)} / ${parseFloat(item.qty2).toFixed(2)}<br/> ${
+          resultStore.getCurrency
+        }${parseFloat(item.amount2 / item.qty2).toFixed(2)}`,
+        skuRefundRate: `${item.skuRefundRate}%`,
       };
     });
 
-    tableColumns.value = tableHeaderData;
+    if (resultStore.getSelectedSalesItemDatesCount >= 2) {
+      tableHeaderData.push({
+        key: "detailSecond",
+        label: `${skuList[0].selectedDate2} <br /> Sales/Units <br />Avg. Selling Price`,
+      });
+    }
 
+    tableHeaderData.push({
+      key: "skuRefundRate",
+      label: `SKU Refund Rate <br /><sup>(Last ${filterDayRef.value} days)</sup>`,
+    });
+    tableColumns.value = tableHeaderData;
     tableData.value = tableBodyData;
+    showTable.value = true;
   } catch (error) {
     console.error("Error:", error);
   }
 };
+
+const setChartBarColors = (color: string, index: number) => {
+  const seriesSvg = document.querySelector(
+    ".apexcharts-bar-series.apexcharts-plot-series"
+  );
+  const gProfit =
+    seriesSvg?.querySelectorAll(
+      `.apexcharts-series[seriesName="Profit"] path`
+    ) || [];
+  const gFBAxSales =
+    seriesSvg?.querySelectorAll(
+      `.apexcharts-series[seriesName="FBAxSales"] path`
+    ) || [];
+  const gFBMxSales =
+    seriesSvg?.querySelectorAll(
+      `.apexcharts-series[seriesName="FBMxSales"] path`
+    ) || [];
+
+  gProfit[index].setAttribute("fill", color);
+  gFBAxSales[index].setAttribute("fill", color);
+  gFBMxSales[index].setAttribute("fill", color);
+};
+
+const resetChartBarColors = () => {
+  const seriesSvg = document.querySelector(
+    ".apexcharts-bar-series.apexcharts-plot-series"
+  );
+  const gProfit =
+    seriesSvg?.querySelectorAll(
+      `.apexcharts-series[seriesName="Profit"] path`
+    ) || [];
+  const gFBAxSales =
+    seriesSvg?.querySelectorAll(
+      `.apexcharts-series[seriesName="FBAxSales"] path`
+    ) || [];
+  const gFBMxSales =
+    seriesSvg?.querySelectorAll(
+      `.apexcharts-series[seriesName="FBMxSales"] path`
+    ) || [];
+
+  gProfit?.forEach((g) => g.setAttribute("fill", "rgba(0,143,251,0.85)"));
+  gFBAxSales?.forEach((g) => g.setAttribute("fill", "rgba(0,227,150,0.85)"));
+  gFBMxSales?.forEach((g) => g.setAttribute("fill", "rgba(254,176,25,0.85)"));
+};
+
 const handleBarClick = (
-  event: MouseEvent,
-  chartContext: any,
+  _event: MouseEvent,
+  _chartContext: any,
   config: any
 ): void => {
   const dataPointIndex: number = config.dataPointIndex;
 
   if (dataPointIndex !== -1) {
+    if (resultStore.getSelectedSalesItemDatesCount === 0) {
+      setChartBarColors("lightseagreen", dataPointIndex);
+    }
+
+    if (resultStore.getSelectedSalesItemDatesCount === 1) {
+      setChartBarColors("purple", dataPointIndex);
+    }
+
     if (resultStore.getSelectedSalesItemDatesCount === 2) {
       resultStore.resetSelectedItemDates();
+      resetChartBarColors();
+      setChartBarColors("lightseagreen", dataPointIndex);
     }
 
     resultStore.setSelectedItemDate(dataPointIndex);
@@ -159,7 +218,7 @@ onMounted(async () => initChart());
     </div>
   </Section>
 
-  <Section class="section-table">
+  <Section v-if="showTable" class="section-table">
     <Table :columns="tableColumns" :data="tableData" />
   </Section>
 </template>
