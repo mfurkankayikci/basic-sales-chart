@@ -27,7 +27,7 @@ The project is developed using Vue 3 and Pinia. Main components include user log
 Navigate to the project folder and follow the steps below:
 
 1. Run `npm install` to install project dependencies.
-2. Run `npm run serve` to start the project.
+2. Run `npm run dev` to start the project.
 
 ## Developer
 
